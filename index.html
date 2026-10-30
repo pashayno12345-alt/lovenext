@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Саша</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            background: #0a0a0f;
+            color: #ffffff;
+            font-family: 'Montserrat', sans-serif;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .player-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 10;
+            height: 100vh;
+            justify-content: center;
+        }
+
+        /* Экран 1: Плеер */
+        #screen-player {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            transition: opacity 1s ease, transform 1s ease;
+        }
+
+        .album-art {
+            width: 250px;
+            height: 250px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #2a1b3d, #6a1b9a);
+            box-shadow: 0 10px 40px rgba(106, 27, 154, 0.4);
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: pulseArt 4s infinite alternate;
+        }
+
+        @keyframes pulseArt {
+            from { box-shadow: 0 10px 40px rgba(106, 27, 154, 0.4); }
+            to { box-shadow: 0 10px 60px rgba(179, 136, 255, 0.6); }
+        }
+
+        .album-art::after {
+            content: '🎵';
+            font-size: 60px;
+            opacity: 0.5;
+            animation: spin 10s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .song-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 28px;
+            font-weight: 600;
+            color: #e0b0ff;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .artist-name {
+            font-size: 14px;
+            color: #888;
+            letter-spacing: 1px;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin-bottom: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #6a1b9a, #b388ff);
+            border-radius: 2px;
+            transition: width 0.1s linear;
+        }
+
+        .time-display {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .play-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6a1b9a, #b388ff);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 30px rgba(179, 136, 255, 0.4);
+            transition: 0.3s;
+            position: relative;
+        }
+
+        .play-btn:active { transform: scale(0.95); }
+        .play-btn::before {
+            content: '▶';
+            font-size: 24px;
+            color: #fff;
+            margin-left: 5px;
+        }
+
+        .play-btn.playing::before {
+            content: '⏸';
+            font-size: 24px;
+            margin-left: 0;
+        }
+
+        .lyrics-overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0a0a0f;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 40px;
+            text-align: center;
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s ease;
+        }
+
+        .lyrics-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .lyric-line {
+            font-size: 22px;
+            line-height: 1.6;
+            color: #fff;
+            margin-bottom: 20px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 1s ease, transform 1s ease;
+            font-weight: 300;
+        }
+
+        .lyric-line.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .lyric-line.highlight {
+            color: #b388ff;
+            font-weight: 600;
+            font-size: 26px;
+        }
+
+        /* ЭКРАН 3: ФИНАЛ */
+        #screen-final {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #1a0b2e 0%, #0a0a0f 100%);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            z-index: 30;
+            opacity: 0;
+            transition: opacity 2s ease;
+        }
+
+        #screen-final.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .final-header {
+            flex-shrink: 0;
+            text-align: center;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+
+        .final-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 36px;
+            color: #e0b0ff;
+            text-shadow: 0 0 30px rgba(224, 176, 255, 0.5);
+        }
+
+        .final-frame {
+            background: rgba(42, 27, 61, 0.5);
+            border: 1px solid rgba(179, 136, 255, 0.3);
+            box-shadow: 0 0 30px rgba(106, 27, 154, 0.3), inset 0 0 20px rgba(106, 27, 154, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            width: 100%;
+            max-width: 380px;
+            overflow-y: auto;
+            flex-grow: 1;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .final-frame::-webkit-scrollbar { width: 5px; }
+        .final-frame::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 5px; }
+        .final-frame::-webkit-scrollbar-thumb { background: #6a1b9a; border-radius: 5px; }
+
+        .final-text {
+            font-size: 15px;
+            color: #d0d0e0;
+            line-height: 1.7;
+            font-weight: 300;
+            text-align: left;
+        }
+
+        .final-text p { margin-bottom: 15px; }
+        .final-text p:last-child { margin-bottom: 0; }
+
+        .final-footer {
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .final-heart {
+            font-size: 40px;
+            animation: heartbeat 1.5s infinite;
+            color: #ff4d6d;
+            text-shadow: 0 0 30px rgba(255, 77, 109, 0.6);
+            margin-bottom: 15px;
+        }
+
+        @keyframes heartbeat {
+            0% { transform: scale(1); }
+            15% { transform: scale(1.2); }
+            30% { transform: scale(1); }
+            45% { transform: scale(1.1); }
+            60% { transform: scale(1); }
+        }
+
+        .next-btn {
+            background: transparent;
+            border: 1px solid #b388ff;
+            color: #b388ff;
+            padding: 12px 40px;
+            border-radius: 30px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+            opacity: 0;
+            pointer-events: none;
+            letter-spacing: 1px;
+        }
+
+        .next-btn.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .next-btn:hover { background: rgba(179, 136, 255, 0.1); }
+
+        .reset-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.3);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 100;
+        }
+
+        /* =========================================
+           ЭКРАН 4: ПАЗЛ
+           ========================================= */
+        #screen-puzzle {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #1a0b2e 0%, #0a0a0f 100%);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 40;
+            opacity: 0;
+            transition: opacity 1.5s ease;
+            padding: 20px;
+        }
+
+        #screen-puzzle.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .puzzle-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 28px;
+            color: #e0b0ff;
+            margin-bottom: 25px;
+            text-align: center;
+            text-shadow: 0 0 20px rgba(224, 176, 255, 0.4);
+        }
+
+        .puzzle-board {
+            width: 300px;
+            height: 300px;
+            position: relative;
+            border-radius: 10px;
+            box-shadow: 0 0 40px rgba(106, 27, 154, 0.4);
+            background: rgba(0,0,0,0.3);
+            border: 2px solid rgba(179, 136, 255, 0.3);
+            overflow: hidden;
+        }
+
+        /* Кусочки пазла */
+        .puzzle-piece {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background-image: url('sasha.jpg'); /* СЮДА ВСТАВЬ ИМЯ ФОТКИ */
+            background-size: 300px 300px;
+            transition: transform 1.5s cubic-bezier(0.25, 1, 0.5, 1), opacity 1s ease, filter 1s ease;
+            opacity: 0;
+            transform: scale(0.5) translate(var(--startX), var(--startY)) rotate(var(--rot));
+            filter: blur(5px) brightness(0.5);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .puzzle-piece.assembled {
+            opacity: 1;
+            transform: scale(1) translate(0, 0) rotate(0deg);
+            filter: blur(0) brightness(1);
+        }
+
+        /* Позиции кусочков (3х3) */
+        .piece-0 { top: 0; left: 0; background-position: 0 0; --startX: -150px; --startY: -150px; --rot: -45deg; }
+        .piece-1 { top: 0; left: 100px; background-position: -100px 0; --startX: 0px; --startY: -200px; --rot: 30deg; }
+        .piece-2 { top: 0; left: 200px; background-position: -200px 0; --startX: 150px; --startY: -150px; --rot: 45deg; }
+        .piece-3 { top: 100px; left: 0; background-position: 0 -100px; --startX: -200px; --startY: 0px; --rot: -30deg; }
+        .piece-4 { top: 100px; left: 100px; background-position: -100px -100px; --startX: 0px; --startY: 0px; --rot: 180deg; }
+        .piece-5 { top: 100px; left: 200px; background-position: -200px -100px; --startX: 200px; --startY: 0px; --rot: 30deg; }
+        .piece-6 { top: 200px; left: 0; background-position: 0 -200px; --startX: -150px; --startY: 150px; --rot: 45deg; }
+        .piece-7 { top: 200px; left: 100px; background-position: -100px -200px; --startX: 0px; --startY: 200px; --rot: -30deg; }
+        .piece-8 { top: 200px; left: 200px; background-position: -200px -200px; --startX: 150px; --startY: 150px; --rot: 45deg; }
+
+        /* Кнопка сборки */
+        .assemble-btn {
+            margin-top: 40px;
+            background: linear-gradient(135deg, #6a1b9a, #b388ff);
+            border: none;
+            color: white;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(179, 136, 255, 0.4);
+            transition: 0.3s;
+            letter-spacing: 1px;
+            opacity: 1;
+        }
+
+        .assemble-btn:active { transform: scale(0.95); }
+        .assemble-btn.hidden { display: none; }
+
+        /* Скрытые элементы */
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="player-container">
+        
+        <!-- ЭКРАН 1: ПЛЕЕР -->
+        <div id="screen-player">
+            <div class="album-art"></div>
+            <div class="song-title">Наша песня</div>
+            <div class="artist-name">Для Саши</div>
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="time-display">
+                <span id="currentTime">0:00</span>
+                <span id="totalTime">0:00</span>
+            </div>
+            <button class="play-btn" id="playBtn" onclick="togglePlay()"></button>
+        </div>
+
+        <!-- ЭКРАН 2: ТЕКСТ ПЕСНИ -->
+        <div class="lyrics-overlay" id="lyricsOverlay">
+            <div id="lyricsContainer" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;"></div>
+        </div>
+
+        <!-- ЭКРАН 3: ФИНАЛ -->
+        <div id="screen-final">
+            <div class="final-header">
+                <div class="final-title">Саша...</div>
+            </div>
+            <div class="final-frame">
+                <div class="final-text">
+                    <p>Слушай, Саш... Я тут сидел и думал, как начать этот текст, чтобы не звучать как дешевый романтик из пабликов. И знаешь, я просто скажу как есть.</p>
+                    <p>Ты — мой личный ангел, моя нежная малышка и моя маленькая принцесса. Я до сих пор херею, как ты смогла так глубоко залезть мне в душу. С первого дня нашего знакомства ты заставила меня поверить в то, что такое вообще бывает. И это безумно круто.</p>
+                    <p>Сейчас мы на расстоянии, и это единственное, что реально бесит. Но знай: я готов ждать. Через год мы будем в Питере, и я уже мысленно прокручиваю тот момент, когда смогу прижать тебя к себе, взять твое лицо в руки и наконец-то поцеловать. Этот поцелуй будет для меня как награда за всё это время. Не думай, что я забыл, малышка.</p>
+                    <p>В тебе безумно всё нравится. Твоя улыбка, твой ангельский голос, твои глаза, даже то, как ты иногда молчишь или поправляешь волосы. Ты умеешь поддержать так, что я чувствую себя непобедимым. У тебя доброе сердце и искренняя душа — и я ценю это больше, чем что-либо на свете.</p>
+                    <p>Хочу, чтобы ты четко понимала: я никогда тебя не брошу. Ни при каких раскладах. Буду рядом и в хорошие, и в плохие моменты. Буду твоей опорой, буду смотреть, как ты добиваешься всего, и буду гордиться тобой каждый день.</p>
+                    <p>Спасибо, что выбрала меня. Спасибо за то, что терпишь мои загоны. Я обещаю становиться лучше ради тебя и ради нас. Я тебя очень сильно люблю.</p>
+                </div>
+            </div>
+            <div class="final-footer">
+                <div class="final-heart">❤️</div>
+                <button class="next-btn" id="nextBtn" onclick="goToPuzzle()">ЛИСТАТЬ ДАЛЬШЕ</button>
+            </div>
+        </div>
+
+        <!-- ЭКРАН 4: ПАЗЛ -->
+        <div id="screen-puzzle">
+            <div class="puzzle-title">Собери меня по кусочкам...</div>
+            <div class="puzzle-board" id="puzzleBoard">
+                <!-- Кусочки будут сгенерированы через JS -->
+            </div>
+            <button class="assemble-btn" id="assembleBtn" onclick="assemblePuzzle()">СОБРАТЬ ФОТО</button>
+        </div>
+
+    </div>
+
+    <button class="reset-btn" onclick="location.reload()">Сброс</button>
+
+    <script>
+        // === ЛОГИКА ПЛЕЕРА ===
+        let isPlaying = false;
+        let currentTime = 0;
+        const totalTime = 25;
+        let timerInterval;
+
+        const playBtn = document.getElementById('playBtn');
+        const progressBar = document.getElementById('progressBar');
+        const currentTimeEl = document.getElementById('currentTime');
+        const totalTimeEl = document.getElementById('totalTime');
+        const lyricsOverlay = document.getElementById('lyricsOverlay');
+        const lyricsContainer = document.getElementById('lyricsContainer');
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        totalTimeEl.innerText = formatTime(totalTime);
+
+        const lyricsData = [
+            { time: 1, text: "Я помню наше знакомство..." },
+            { time: 4, text: "С тех пор каждый день с тобой — это подарок." },
+            { time: 8, text: "Ты делаешь меня лучше, Саша." },
+            { time: 12, text: "Ты нежная, как ангел..." },
+            { time: 16, text: "И мне в тебе безумно всё нравится." },
+            { time: 20, text: "Я тебя никогда не брошу.", highlight: true },
+            { time: 23, text: "Люблю тебя. ❤️", highlight: true }
+        ];
+
+        let shownLyrics = 0;
+
+        function togglePlay() {
+            if (!isPlaying) {
+                isPlaying = true;
+                playBtn.classList.add('playing');
+                lyricsOverlay.classList.add('active');
+                
+                timerInterval = setInterval(() => {
+                    currentTime += 0.1;
+                    const progress = (currentTime / totalTime) * 100;
+                    progressBar.style.width = progress + '%';
+                    currentTimeEl.innerText = formatTime(currentTime);
+
+                    if (shownLyrics < lyricsData.length && currentTime >= lyricsData[shownLyrics].time) {
+                        showLyric(shownLyrics);
+                        shownLyrics++;
+                    }
+
+                    if (currentTime >= totalTime) {
+                        clearInterval(timerInterval);
+                        isPlaying = false;
+                        playBtn.classList.remove('playing');
+                        
+                        setTimeout(() => {
+                            document.getElementById('screen-final').classList.add('active');
+                            setTimeout(() => {
+                                document.getElementById('nextBtn').classList.add('visible');
+                            }, 3000);
+                        }, 2000);
+                    }
+                }, 100);
+            } else {
+                isPlaying = false;
+                playBtn.classList.remove('playing');
+                clearInterval(timerInterval);
+            }
+        }
+
+        function showLyric(index) {
+            const data = lyricsData[index];
+            const p = document.createElement('div');
+            p.className = 'lyric-line';
+            if (data.highlight) p.classList.add('highlight');
+            p.innerText = data.text;
+            
+            if (lyricsContainer.children.length > 2) {
+                lyricsContainer.removeChild(lyricsContainer.firstChild);
+            }
+            lyricsContainer.appendChild(p);
+            setTimeout(() => { p.classList.add('visible'); }, 50);
+        }
+
+        // === ПЕРЕХОД К ПАЗЛУ ===
+        function goToPuzzle() {
+            document.getElementById('screen-final').classList.remove('active');
+            document.getElementById('screen-puzzle').classList.add('active');
+            
+            // Генерируем пазл
+            createPuzzle();
+        }
+
+        // === ЛОГИКА ПАЗЛА ===
+        function createPuzzle() {
+            const board = document.getElementById('puzzleBoard');
+            board.innerHTML = ''; // Очистка
+            
+            for (let i = 0; i < 9; i++) {
+                const piece = document.createElement('div');
+                piece.className = `puzzle-piece piece-${i}`;
+                board.appendChild(piece);
+            }
+        }
+
+        function assemblePuzzle() {
+            const btn = document.getElementById('assembleBtn');
+            const pieces = document.querySelectorAll('.puzzle-piece');
+            
+            btn.classList.add('hidden');
+            
+            // Запускаем сборку с небольшой задержкой для каждого кусочка
+            pieces.forEach((piece, index) => {
+                setTimeout(() => {
+                    piece.classList.add('assembled');
+                }, index * 150);
+            });
+        }
+    </script>
+</body>
+</html>
